@@ -1,7 +1,8 @@
 const { generateToken } = require("../jwt/generateToken");
-const user = require("../models/userModel")
+const userModel = require("../models/userModel");
 const bcrypt = require("bcrypt")
 const saltRounds = 10
+const nodemailer = require("nodemailer")
 
 module.exports = ({
     createUser: async (req, res) => {
@@ -14,10 +15,10 @@ module.exports = ({
                 });
             }
             const hashPassword = await bcrypt.hash(req.body.password, saltRounds);
-            const newUser = await user.create({ ...req.body, password: hashPassword });
+            const newUser = await userModel.create({ ...req.body, password: hashPassword });
             let token;
             if (newUser) {
-                const latestUser = await user.findOne(newUser._id);
+                const latestUser = await userModel.findOne(newUser._id);
                 token = await generateToken(newUser._id);
                 await latestUser.updateOne({
                     token: token.token,
@@ -57,7 +58,7 @@ module.exports = ({
                 })
             }
 
-            const updatedUser = await user.findByIdAndUpdate({
+            const updatedUser = await userModel.findByIdAndUpdate({
                 _id: userId
             }, {
                 name: req.body.name,
@@ -92,7 +93,7 @@ module.exports = ({
                 })
             }
 
-            const userData = await user.findById(userId)
+            const userData = await userModel.findById(userId)
             if (!userData) {
                 return res.json({
                     message: "User not found...",
@@ -119,7 +120,7 @@ module.exports = ({
                     status: 400
                 })
             }
-            const userData = await user.findByIdAndDelete({ _id: userId });
+            const userData = await userModel.findByIdAndDelete({ _id: userId });
             if (!userData) {
                 return res.json({
                     message: "User not found...",
@@ -138,17 +139,19 @@ module.exports = ({
 
     login: async (req, res) => {
         try {
-            const users = await user.findOne({ email: req.body.email })
-            const password = await users.password;
-            const decryptPassword = await bcrypt.compare(req.body.password, password);
+            const users = await userModel.findOne({ email: req.body.email })
+            if (!users) {
+                return res.json({
+                    message: "Incorrect username!"
+                })
+            }
+            const decryptPassword = await bcrypt.compare(req.body.password, users.password);
 
             if (decryptPassword == false) {
                 return res.json({
-                    message: "Dhang se daal"
+                    message: "Incorrect password!"
                 })
-
             }
-
             const token = await generateToken(users._id)
             console.log(token, "token")
             await users.updateOne({ token: token.token, loginTime: token.time })
@@ -164,6 +167,94 @@ module.exports = ({
                 message: "Success",
                 status: 200,
                 body: obj
+            })
+        } catch (error) {
+            console.log(error)
+        }
+    },
+
+    logOut: async (req, res) => {
+        try {
+            // console.log("lll")
+            // console.log(req.user, "xwbhsbx")
+            const userData = await userModel.findByIdAndUpdate({ _id: req.user._id }, {
+                logintime: 0
+            }, { new: true })
+        } catch (error) {
+
+        }
+    },
+
+    forgetPassword: async (req, res) => {
+        try {
+            const userEmail = req.body.email;
+            const data = await userModel.findOne({ email: userEmail })
+
+            var otp = Math.floor(Math.random() * 10000 + 1);
+            // var otp = 4444;
+            const user = await userModel.findByIdAndUpdate(
+                {
+                    _id: data._id,
+                },
+                { otp: otp }
+            );
+            var transport = nodemailer.createTransport({
+                host: "smtp.mailtrap.io",
+                port: 2525,
+                auth: {
+                    user: "f39ae1e4f58dad",
+                    pass: "ab1a3fa7143df2"
+                }
+            });
+
+            let info = await transport.sendMail({
+                from: '"Fred Foo 👻" <foo@example.com>', // sender address
+                to: req.body.email, // list of receivers
+                subject: "OTP generate ✔", // Subject line
+                text: "Hello world?", // plain text body
+                html: `<b>Hello world? Here is your otp: :
+                ${otp}
+                 </b>`,
+            });
+
+        } catch (error) {
+
+        }
+    },
+
+    resendOtp: async (req, res) => {
+        try {
+            const userEmail = req.body.email;
+            const data = await userModel.findOne({ email: userEmail })
+
+            var otp = Math.floor(Math.random() * 10000 + 1)
+
+            const user = await userModel.findByIdAndUpdate(
+                {
+                    _id: data._id,
+                },
+                {
+                    otp: otp
+                }
+            );
+
+            const transport = nodemailer.createTransport({
+                host: "smtp.mailtrap.io",
+                port: 2525,
+                auth: {
+                    user: "f39ae1e4f58dad",
+                    pass: "ab1a3fa7143df2"
+                }
+            });
+
+            const info = transport.sendMail({
+                from: '"Fred Foo 👻" <foo@example.com>', // sender address
+                to: req.body.email, // list of receivers
+                subject: "OTP generate ✔", // Subject line
+                text: "Hello world?", // plain text body
+                html: `<b>Hello user? Here is your otp: :
+                ${otp}
+                 </b>`,
             })
         } catch (error) {
             console.log(error)
