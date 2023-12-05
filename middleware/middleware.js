@@ -29,37 +29,3 @@ module.exports = {
         }
     }
 }
-
-
-
-// export const authMiddleware = expressAsyncHandler(async (req, res, next) => {
-//     let token;
-//     if (
-//         req.headers.authorization &&
-//         req.headers.authorization.startsWith("Bearer")
-//     ) {
-//         try {
-//             token = req.headers.authorization.split(" ")[1];
-//             const decode = await jwt.verify(token, process.env.JWT_SECRET_KEY);
-//             let checkUser = await User.findOne({
-//                 _id: decode.id,
-//                 login_time: decode.iat,
-//             });
-//             if (checkUser) {
-//                 req.user = checkUser;
-//                 next();
-//             } else {
-//                 return error(res, "Please Login First");
-//             }
-//         } catch (err) {
-//             if (err.message === "jwt expired" || "jwt malformed") {
-//                 return error(res, "Session Expired !!");
-//             } else {
-//                 return error(res, err.message);
-//             }
-//         }
-//     } else {
-//         res.status(401);
-//         throw new Error(res, "Not authorized , No token");
-//     }
-// });

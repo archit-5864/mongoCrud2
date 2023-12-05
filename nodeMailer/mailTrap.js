@@ -2,7 +2,6 @@ const nodemailer = require('nodemailer');
 // const SMTPTransport = require('nodemailer/lib/smtp-transport');
 
 const emailSender = async (to, subject, html) => {
-//   console.log("cred =====", SMTP_MAIL, SMTP_PASSWORD);
 var transport = nodemailer.createTransport({
     host: "smtp.mailtrap.io",
     port: 2525,
@@ -13,10 +12,10 @@ var transport = nodemailer.createTransport({
   });
 
   let info = await transport.sendMail({
-    from: '"Fred Foo 👻" <foo@example.com>', // sender address
-    to: values.inputs.email, // list of receivers
-    subject: "OTP generate ✔", // Subject line
-    text: "Hello world?", // plain text body
+    from: '"Fred Foo 👻" <foo@example.com>',
+    to: values.inputs.email,
+    subject: "OTP generate ✔",
+    text: "Hello world?",
     html: `<b>Hello world? Here is your otp: :
     ${otp}
      </b>`,

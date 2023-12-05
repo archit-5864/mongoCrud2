@@ -153,7 +153,7 @@ module.exports = ({
                 })
             }
             const token = await generateToken(users._id)
-            console.log(token, "token")
+            // console.log(token, "token")
             await users.updateOne({ token: token.token, loginTime: token.time })
             let obj = {
                 name: users.name,
@@ -180,8 +180,18 @@ module.exports = ({
             const userData = await userModel.findByIdAndUpdate({ _id: req.user._id }, {
                 logintime: 0
             }, { new: true })
-        } catch (error) {
 
+            if (!userData) {
+                return res.json({
+                    message: "Your are already logout!"
+                })
+            }
+            return res.json({
+                message: "Logout succcessfully..",
+                status: 200,
+            })
+        } catch (error) {
+            console.log(error)
         }
     },
 
@@ -191,7 +201,6 @@ module.exports = ({
             const data = await userModel.findOne({ email: userEmail })
 
             var otp = Math.floor(Math.random() * 10000 + 1);
-            // var otp = 4444;
             const user = await userModel.findByIdAndUpdate(
                 {
                     _id: data._id,
@@ -212,7 +221,7 @@ module.exports = ({
                 to: req.body.email, // list of receivers
                 subject: "OTP generate ✔", // Subject line
                 text: "Hello world?", // plain text body
-                html: `<b>Hello world? Here is your otp: :
+                html: `<b>Hello ${data.name}! Here is your otp: :
                 ${otp}
                  </b>`,
             });
@@ -252,12 +261,46 @@ module.exports = ({
                 to: req.body.email, // list of receivers
                 subject: "OTP generate ✔", // Subject line
                 text: "Hello world?", // plain text body
-                html: `<b>Hello user? Here is your otp: :
+                html: `<b>Hello ${data.name}! Here is your otp: :
                 ${otp}
                  </b>`,
             })
         } catch (error) {
             console.log(error)
         }
-    }
+    },
+
+    forgetUpdatePassword: async (req, res) => {
+        try {
+            const data = req.body;
+            const userData = await userModel.findOne({ email: data.email })
+
+            if (!userData) {
+                return res.json({
+                    message: "Incorrect email!",
+                    status: 400,
+                    body: {}
+                })
+            }
+
+            if (userData.otp != data.otp) {
+                return res.json({
+                    message: "Incorrect otp!",
+                    status: 400,
+                    body: {}
+                })
+            }
+
+            const hashPassword = await bcrypt.hash(data.password, saltRounds)
+            const updatedData = await userModel.findOneAndUpdate({email: userData.email}, { password: hashPassword }, {new: true})
+            return res.json({
+                message: "Password updated successfully..",
+                status: 400,
+                body: updatedData
+            })
+        } catch (error) {
+            console.log(error)
+        }
+    },
+
 })
